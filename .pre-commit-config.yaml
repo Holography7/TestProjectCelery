@@ -1,0 +1,27 @@
+repos:
+- repo: local
+
+  hooks:
+    - id: sort_imports
+      name: sorting imports
+      verbose: true
+      language: system
+      stages: [commit]
+      entry: bash -c "source venv/bin/activate && isort --settings-file dev_tools/pre-commit/.isort.cfg src"
+      require_serial: true
+
+    - id: code_check
+      name: mypy check
+      verbose: true
+      language: system
+      stages: [ commit ]
+      entry: bash -c "source venv/bin/activate && mypy --config-file=dev_tools/pre-commit/mypy.ini src"
+      require_serial: true
+
+    - id: code_style
+      name: check code style
+      verbose: true
+      language: system
+      stages: [commit]
+      entry: bash -c "source venv/bin/activate && flake8 --config=dev_tools/pre-commit/.flake8 src"
+      require_serial: true

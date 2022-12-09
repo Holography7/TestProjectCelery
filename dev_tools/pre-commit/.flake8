@@ -1,0 +1,12 @@
+[flake8]
+exclude = .git, __pycache__, env, venv
+max-line-length = 79
+ignore = I201
+max-complexity = 8
+inline-quotes = '
+application-import-names = todo_list
+count = True
+classmethod-decorators =
+    classmethod
+    validator
+    root_validator

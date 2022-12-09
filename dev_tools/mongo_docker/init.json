@@ -1,0 +1,9 @@
+[
+  {
+    "username": "admin",
+    "password": "$2b$12$NuqvfR2iuwJrRUABGN4YL.o/fc6CuaN8Bg8sjjcvxgJpP8RrZG2Tm",
+    "telegram": "@admin",
+    "last_seen": "2022-12-08T13:29:42.819+00:00",
+    "is_superuser": true
+  }
+]
