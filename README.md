@@ -18,7 +18,7 @@ I just want to lear use Celery, nothing else.
    - [X] isort
    - [X] mypy
    - [X] flake8
-- [ ] pytest
+   - [X] pytest
 - [ ] Celery
 - [ ] Redis (or RabbitMQ)
 
@@ -64,7 +64,13 @@ docker-compose up --build
 
 This will automatically build project and database images.
 
-If you using MongoDB from this project, your data will save in `celery_mongo-data` (or `[your_dir]_mongo-data`).
+If you using MongoDB from this project, your data will save in `[your_dir]_mongo-data`.
+
+To make sure that all works, you can run tests:
+```bash
+docker ps
+docker exec [container_name] pytest
+```
 
 ## Or maybe you want to fork and develop by itself?
 

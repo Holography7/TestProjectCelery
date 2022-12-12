@@ -1,17 +1,13 @@
 import os
 
-from motor.motor_asyncio import AsyncIOMotorClient
-from odmantic import AIOEngine
 from passlib.context import CryptContext
 
 PWD_CONTEXT = CryptContext(schemes=['bcrypt'], deprecated='auto')
 MONGO_URI = os.environ.get(
     'DB_URI',
-    'mongodb://admin:admin@mongo:27016/todo_list',
+    'mongodb://todo:todo_list@localhost:27016/admin',
 )
-DATABASE = os.environ.get('DATABASE', 'test')
-MONGO_CLIENT = AsyncIOMotorClient(MONGO_URI)
-MONGO_ENGINE = AIOEngine(client=MONGO_CLIENT, database=DATABASE)
+DATABASE = os.environ.get('DATABASE', 'todo_list')
 JWT_ACCESS_SECRET_KEY = os.environ.get(
     'JWT_ACCESS_SECRET_KEY',
     '7b56469aa36b99752087095c8493e663289b066b594731839ef0c8bd57ac8a74',

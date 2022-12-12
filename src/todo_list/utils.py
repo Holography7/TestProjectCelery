@@ -1,23 +1,27 @@
 import datetime
 
+from dependencies import get_db_session
+from fastapi import Depends
 from jose import jwt
 from odmantic import query
+from odmantic.session import AIOSession
 from pymongo.errors import ConnectionFailure
 from settings import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     JWT_ACCESS_SECRET_KEY,
     JWT_ALGORITHM,
     JWT_REFRESH_SECRET_KEY,
-    MONGO_ENGINE,
 )
 
 from todo_list.enums import TokenEnum
 from todo_list.models import User
 
 
-async def check_database() -> dict:
+async def check_database(
+        db_session: AIOSession = Depends(get_db_session),  # noqa
+) -> dict:
     try:
-        await MONGO_ENGINE.find_one(User, query.eq(User.is_superuser, True))
+        await db_session.find_one(User, query.eq(User.is_superuser, True))
     except ConnectionFailure as exc:
         status = {'Database': str(exc)}
     else:
@@ -47,3 +51,12 @@ def create_token(
         algorithm=JWT_ALGORITHM,
     )
     return encoded_jwt
+
+
+def decode_token(token: str, token_type: TokenEnum = TokenEnum.ACCESS) -> dict:
+    secret_key = (
+        JWT_ACCESS_SECRET_KEY
+        if token_type == TokenEnum.ACCESS
+        else JWT_REFRESH_SECRET_KEY
+    )
+    return jwt.decode(token, secret_key, algorithms=[JWT_ALGORITHM])
