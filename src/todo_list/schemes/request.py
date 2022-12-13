@@ -27,3 +27,7 @@ class UserLoginRequestScheme(BaseModel):
 
 class RefreshTokenRequestScheme(BaseModel):
     refresh_token: str
+
+
+class TODOListRequestScheme(BaseModel):
+    name: str

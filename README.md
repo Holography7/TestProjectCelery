@@ -30,8 +30,8 @@ It's API that allows creating TODO lists for each user. All data stores in Mongo
 
 - [X] Simple registration users (unfortunately, FastAPI Users not allows ODMantic as backend)
 - [X] JWT Authorization
-- [ ] Creating TODO List. User have access only to own lists.
-- [ ] Superuser can watch all TODO lists
+- [X] Creating TODO List. User have access only to own lists.
+- [X] Superuser can watch all TODO lists
 - [ ] Superuser can delete others TODO lists
 - [ ] After deleting, every user get on [abstract] telegram message about deleting TODO list (there should work Celery)
 
