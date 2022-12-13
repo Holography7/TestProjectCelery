@@ -4,7 +4,7 @@ I just want to lear use Celery, nothing else.
 
 ## Stack realized technologies:
 
-- [X] Python 3.10 (but docker using 3.11)
+- [X] Python 3.11
 - [X] FastAPI
 - [X] fastapi-health library
 - [X] MongoDB
@@ -39,12 +39,6 @@ It's API that allows creating TODO lists for each user. All data stores in Mongo
 
 - clone this repo
 - make sure that you have Docker engine and you able to run docker-compose
-- create your own venv in root directory of downloaded repo:
-
-```bash
-python3 -m venv venv
-```
-
 - create `.env` file in root directory of downloaded repo and type your variables:
 
 | Variable      | Description                          | Recommended value                                       |
@@ -74,6 +68,12 @@ docker exec [container_name] pytest
 
 ## Or maybe you want to fork and develop by itself?
 
+Then create your own venv in root directory of downloaded repo:
+
+```bash
+python3 -m venv venv
+```
+
 Remember that in this project includes some pre-commit hooks. You can also install it:
 ```bash
 cd dev_tools/pre-commit
@@ -81,9 +81,7 @@ pip install -r requirements.txt
 pre-commit install
 ```
 
-Also `dev_tools` contains dockerized MongoDB in `mongo_docker`, so you don't need to install it on local machine. To use it:
-
-- Create `.env` file in `dev_tools/mongo_docker`:
+Also `dev_tools` contains dockerized MongoDB in `mongo_docker`, so you don't need to install it on local machine. To use it, create `.env` file in `dev_tools/mongo_docker`:
 
 | Variable | Description                                                           | Recommended value |
 |----------|-----------------------------------------------------------------------|-------------------|

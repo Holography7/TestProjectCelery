@@ -6,6 +6,7 @@ max-complexity = 8
 inline-quotes = '
 application-import-names = todo_list
 count = True
+extend-immutable-calls = fastapi.Depends, Depends
 classmethod-decorators =
     classmethod
     validator

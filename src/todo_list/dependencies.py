@@ -19,7 +19,7 @@ credentials_exception = HTTPException(
 
 async def has_access(
         credentials: HTTPAuthorizationCredentials = security,
-        db_session: AIOSession = Depends(get_db_session),  # noqa
+        db_session: AIOSession = Depends(get_db_session),
 ) -> User:
     token = credentials.credentials
     try:

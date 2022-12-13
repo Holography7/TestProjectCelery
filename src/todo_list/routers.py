@@ -28,7 +28,7 @@ router = APIRouter()
 )
 async def create_tokens(
         user_data: UserLoginRequestScheme,
-        db_session: AIOSession = Depends(get_db_session),  # noqa
+        db_session: AIOSession = Depends(get_db_session),
 ) -> dict:
     user = await db_session.find_one(
         User,
@@ -54,7 +54,7 @@ async def create_tokens(
 )
 async def refresh_tokens(
         token: RefreshTokenRequestScheme,
-        db_session: AIOSession = Depends(get_db_session),  # noqa
+        db_session: AIOSession = Depends(get_db_session),
 ) -> dict:
     try:
         payload = decode_token(token.refresh_token, TokenEnum.REFRESH)
@@ -72,7 +72,7 @@ async def refresh_tokens(
 
 
 @router.get('/profile', response_model=UserResponseScheme)
-async def profile(user: User = Depends(has_access)) -> User:  # noqa
+async def profile(user: User = Depends(has_access)) -> User:
     return user
 
 
@@ -83,7 +83,7 @@ async def profile(user: User = Depends(has_access)) -> User:  # noqa
 )
 async def registration(
         user_creds: UserRegistrationRequestScheme,
-        db_session: AIOSession = Depends(get_db_session),  # noqa
+        db_session: AIOSession = Depends(get_db_session),
 ) -> UserRegistrationRequestScheme:
     hashed_pass = PWD_CONTEXT.hash(user_creds.password)
     user = User(

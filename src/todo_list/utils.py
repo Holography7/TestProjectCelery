@@ -18,7 +18,7 @@ from todo_list.models import User
 
 
 async def check_database(
-        db_session: AIOSession = Depends(get_db_session),  # noqa
+        db_session: AIOSession = Depends(get_db_session),
 ) -> dict:
     try:
         await db_session.find_one(User, query.eq(User.is_superuser, True))
