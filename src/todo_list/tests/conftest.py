@@ -1,5 +1,4 @@
 import asyncio
-import random
 from asyncio import AbstractEventLoop
 from typing import AsyncGenerator, Generator
 
@@ -103,8 +102,8 @@ async def todo_lists(
         mongo_test_engine: AIOEngine,
 ) -> AsyncGenerator[list[TODOListFactory], None]:
     todo_lists = [
-        TODOListFactory(user=random.choice((admin, common_user)))
-        for i in range(5)
+        TODOListFactory(user=admin if i < 5 else common_user)
+        for i in range(10)
     ]
     async with mongo_test_engine.session() as session:
         await session.save_all(todo_lists)
