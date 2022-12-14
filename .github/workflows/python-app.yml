@@ -1,0 +1,52 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      DB_USER: todo
+      DB_PASS: todo_list
+      DB_NAME: todo_list
+      DB_PORT: 27016
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        pip install -r requirements.txt
+        pip install -r dev_tools/pre-commit/requirements.txt
+    - name: Lint with flake8
+      run: |
+        flake8 --config=dev_tools/pre-commit/.flake8 --show-source --statistics src
+    - name: Run dockerized MongoDB
+      run: |
+        cd dev_tools/mongo_docker
+        docker-compose up --build -d
+        cd ../../
+    - name: Test with pytest
+      run: |
+        pytest src
+    - name: Stop dockerized MongoDB
+      run: |
+        cd dev_tools/mongo_docker
+        docker-compose down
+        cd ../../
