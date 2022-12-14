@@ -1,4 +1,5 @@
 import datetime
+from uuid import UUID
 
 from dependencies import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -7,8 +8,13 @@ from odmantic.session import AIOSession
 from settings import PWD_CONTEXT
 from starlette import status
 
-from todo_list.dependencies import credentials_exception, has_access
+from todo_list.dependencies import (
+    credentials_exception,
+    get_todo_list_by_uuid,
+    has_access,
+)
 from todo_list.enums import TokenEnum
+from todo_list.flake8_fastapi_fix import fix_cf009
 from todo_list.models import TODOList, User
 from todo_list.schemes.request import (
     RefreshTokenRequestScheme,
@@ -108,7 +114,7 @@ async def registration(
 
 
 @router.post(
-    '/todo_list/create',
+    '/todo_list',
     response_model=TODOListResponseScheme,
     status_code=status.HTTP_201_CREATED,
 )
@@ -131,3 +137,47 @@ async def get_todo_lists(
         return await db_session.find(TODOList)
     else:
         return await db_session.find(TODOList, TODOList.user == user.id)
+
+
+@router.get('/todo_list/{uuid}', response_model=TODOListResponseScheme)
+async def get_todo_list(
+        uuid: UUID,
+        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+            get_todo_list_by_uuid,
+        ),
+) -> TODOList:
+    return todo_list_with_session[0]
+
+
+@router.put('/todo_list/{uuid}', response_model=TODOListResponseScheme)
+async def update_todo_list(
+        uuid: UUID,
+        todo_list_data: TODOListRequestScheme,
+        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+            get_todo_list_by_uuid,
+        ),
+) -> TODOList:
+    todo_list, db_session = todo_list_with_session
+    # todo_list.update(todo_list_data) crush pre-commit hook flake8. It causes
+    # by flake8-fastapi plugin that cannot find 'update' function declaration.
+    # noqa doesn't help in this case, but if declare 'fix_cf009' function and
+    # save returned value to 'fixed' it works somehow, but it causes mypy check
+    # error, so this string marked as ignore for him. I hope flake8-fastapi
+    # plugin will fix soon.
+    # issue: https://github.com/Kludex/flake8-fastapi/issues/28
+    fixed = fix_cf009(todo_list.update(todo_list_data))  # type: ignore
+    if not fixed:
+        raise ValueError("'Fix for CF009 doesn't work")
+    await db_session.save(todo_list)
+    return todo_list
+
+
+@router.delete('/todo_list/{uuid}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_todo_list(
+        uuid: UUID,
+        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+            get_todo_list_by_uuid,
+        ),
+) -> None:
+    todo_list, db_session = todo_list_with_session
+    await db_session.delete(todo_list)

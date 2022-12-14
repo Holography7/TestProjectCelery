@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from bson import Binary
 from fastapi import FastAPI
 from httpx import AsyncClient
 from odmantic import AIOEngine
@@ -74,21 +77,21 @@ async def test_create_todo_list(
             headers={'Authorization': f'Bearer {access_token}'},
     ) as async_client:
         response = await async_client.post(
-            '/todo_list/create',
+            '/todo_list',
             json=todo_list_create_data,
         )
     response_json = response.json()
     assert response.status_code == 201, response_json
-    response_json.pop('uuid')
+    uuid = UUID(response_json.pop('uuid'))
     assert response_json == todo_list_create_data
     async with mongo_test_engine.session() as session:
         assert await session.find_one(
             TODOList,
-            TODOList.name == response_json['name'],
+            TODOList.uuid == Binary.from_uuid(uuid),
         )
 
 
-async def test_get_todo_list_as_common_user(
+async def test_get_todo_lists_as_common_user(
         app: FastAPI,
         common_user: User,
         access_token: str,
@@ -116,7 +119,7 @@ async def test_get_todo_list_as_common_user(
     assert true_response == response_json
 
 
-async def test_get_todo_list_as_admin(
+async def test_get_todo_lists_as_admin(
         app: FastAPI,
         access_token_admin: str,
         todo_lists: list[TODOList],
@@ -135,3 +138,265 @@ async def test_get_todo_list_as_admin(
         todo_list.pop('user')
         todo_list['uuid'] = str(todo_list['uuid'].as_uuid())
     assert true_response == response_json
+
+
+async def test_get_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id == common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for current user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.get(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    true_response = todo_list.dict()
+    true_response.pop('id')
+    true_response.pop('user')
+    true_response['uuid'] = str(true_response['uuid'].as_uuid())
+    assert true_response == response_json
+
+
+async def test_get_todo_list_as_admin(
+        app: FastAPI,
+        access_token_admin: str,
+        todo_lists: list[TODOList],
+) -> None:
+    todo_list = todo_lists[0]
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token_admin}'},
+    ) as async_client:
+        response = await async_client.get(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    true_response = todo_list.dict()
+    true_response.pop('id')
+    true_response.pop('user')
+    true_response['uuid'] = str(true_response['uuid'].as_uuid())
+    assert true_response == response_json
+
+
+async def test_get_admin_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id != common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for admin (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.get(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    response_json = response.json()
+    assert response.status_code == 404, response_json
+
+
+async def test_put_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id == common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for common user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.put(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+            json=todo_list_create_data,
+        )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    async with mongo_test_engine.session() as session:
+        todo_list_db = await session.find_one(
+            TODOList,
+            TODOList.uuid == Binary.from_uuid(UUID(response_json['uuid'])),
+        )
+    assert todo_list_db is not None, 'TODOList not found in DB (bad uuid?)'
+    true_response = todo_list_db.dict()
+    true_response.pop('id')
+    true_response.pop('user')
+    true_response['uuid'] = str(true_response['uuid'].as_uuid())
+    assert true_response == response_json
+
+
+async def test_put_todo_list_as_admin(
+        app: FastAPI,
+        access_token_admin: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = todo_lists[0]
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token_admin}'},
+    ) as async_client:
+        response = await async_client.put(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+            json=todo_list_create_data,
+        )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    async with mongo_test_engine.session() as session:
+        todo_list_db = await session.find_one(
+            TODOList,
+            TODOList.uuid == Binary.from_uuid(UUID(response_json['uuid'])),
+        )
+    assert todo_list_db is not None, 'TODOList not found in DB (bad uuid?)'
+    true_response = todo_list_db.dict()
+    true_response.pop('id')
+    true_response.pop('user')
+    true_response['uuid'] = str(true_response['uuid'].as_uuid())
+    assert true_response == response_json
+
+
+async def test_put_admin_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id != common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for common user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.put(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+            json=todo_list_create_data,
+        )
+    response_json = response.json()
+    assert response.status_code == 404, response_json
+
+# --------------------------------
+
+
+async def test_delete_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id == common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for common user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.delete(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    assert response.status_code == 204
+    async with mongo_test_engine.session() as session:
+        deleted_todo_list = await session.find_one(
+            TODOList,
+            TODOList.uuid == todo_list.uuid,
+        )
+    assert deleted_todo_list is None
+
+
+async def test_delete_todo_list_as_admin(
+        app: FastAPI,
+        access_token_admin: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = todo_lists[0]
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token_admin}'},
+    ) as async_client:
+        response = await async_client.delete(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    assert response.status_code == 204
+    async with mongo_test_engine.session() as session:
+        deleted_todo_list = await session.find_one(
+            TODOList,
+            TODOList.uuid == todo_list.uuid,
+        )
+    assert deleted_todo_list is None
+
+
+async def test_delete_admin_todo_list_as_common_user(
+        app: FastAPI,
+        common_user: User,
+        access_token: str,
+        todo_lists: list[TODOList],
+        todo_list_create_data: dict,
+        mongo_test_engine: AIOEngine,
+) -> None:
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id != common_user.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for common user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token}'},
+    ) as async_client:
+        response = await async_client.delete(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    assert response.status_code == 404
