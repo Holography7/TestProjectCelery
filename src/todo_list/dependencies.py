@@ -42,7 +42,7 @@ async def get_todo_list_by_uuid(
         uuid: UUID,
         user: User = Depends(has_access),
         db_session: AIOSession = Depends(get_db_session),
-) -> tuple[TODOList, AIOSession]:
+) -> tuple[User, TODOList, AIOSession]:
     if user.is_superuser:
         todo_list = await db_session.find_one(
             TODOList,
@@ -56,4 +56,4 @@ async def get_todo_list_by_uuid(
         )
     if not todo_list:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return todo_list, db_session
+    return user, todo_list, db_session

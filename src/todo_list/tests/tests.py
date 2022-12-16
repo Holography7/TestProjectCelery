@@ -4,6 +4,7 @@ from bson import Binary
 from fastapi import FastAPI
 from httpx import AsyncClient
 from odmantic import AIOEngine
+from pytest_mock import MockerFixture
 
 from todo_list.models import TODOList, User
 from todo_list.tests.factories import ADMIN_PASSWORD
@@ -316,8 +317,6 @@ async def test_put_admin_todo_list_as_common_user(
     response_json = response.json()
     assert response.status_code == 404, response_json
 
-# --------------------------------
-
 
 async def test_delete_todo_list_as_common_user(
         app: FastAPI,
@@ -355,9 +354,13 @@ async def test_delete_todo_list_as_admin(
         app: FastAPI,
         access_token_admin: str,
         todo_lists: list[TODOList],
-        todo_list_create_data: dict,
         mongo_test_engine: AIOEngine,
+        mocker: MockerFixture,
 ) -> None:
+    mocked_celery_task = mocker.patch(
+        'celery_app.tasks.send_message_about_deleting.delay',
+    )
+    mocked_celery_task.return_value = None
     todo_list = todo_lists[0]
     async with AsyncClient(
             app=app,
@@ -400,3 +403,39 @@ async def test_delete_admin_todo_list_as_common_user(
             f'/todo_list/{todo_list.uuid.as_uuid()}',
         )
     assert response.status_code == 404
+
+
+async def test_delete_todo_list_of_common_user_as_admin(
+        app: FastAPI,
+        admin: User,
+        access_token_admin: str,
+        todo_lists: list[TODOList],
+        mongo_test_engine: AIOEngine,
+        mocker: MockerFixture,
+) -> None:
+    mocked_celery_task = mocker.patch(
+        'celery_app.tasks.send_message_about_deleting.delay',
+    )
+    mocked_celery_task.return_value = None
+    todo_list = None
+    for lst in todo_lists:
+        if lst.user.id != admin.id:
+            todo_list = lst
+            break
+    assert todo_list is not None, \
+        'TODOList not created for common user (bad fixture?)'
+    async with AsyncClient(
+            app=app,
+            base_url='http://test',
+            headers={'Authorization': f'Bearer {access_token_admin}'},
+    ) as async_client:
+        response = await async_client.delete(
+            f'/todo_list/{todo_list.uuid.as_uuid()}',
+        )
+    assert response.status_code == 204
+    async with mongo_test_engine.session() as session:
+        deleted_todo_list = await session.find_one(
+            TODOList,
+            TODOList.uuid == todo_list.uuid,
+        )
+    assert deleted_todo_list is None

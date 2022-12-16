@@ -1,6 +1,7 @@
 import datetime
 from uuid import UUID
 
+from celery_app.tasks import send_message_about_deleting
 from dependencies import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, Header
 from jose import JWTError
@@ -142,22 +143,22 @@ async def get_todo_lists(
 @router.get('/todo_list/{uuid}', response_model=TODOListResponseScheme)
 async def get_todo_list(
         uuid: UUID,
-        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+        dependencies: tuple[User, TODOList, AIOSession] = Depends(
             get_todo_list_by_uuid,
         ),
 ) -> TODOList:
-    return todo_list_with_session[0]
+    return dependencies[1]
 
 
 @router.put('/todo_list/{uuid}', response_model=TODOListResponseScheme)
 async def update_todo_list(
         uuid: UUID,
         todo_list_data: TODOListRequestScheme,
-        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+        dependencies: tuple[User, TODOList, AIOSession] = Depends(
             get_todo_list_by_uuid,
         ),
 ) -> TODOList:
-    todo_list, db_session = todo_list_with_session
+    todo_list, db_session = dependencies[1], dependencies[2]
     # todo_list.update(todo_list_data) crush pre-commit hook flake8. It causes
     # by flake8-fastapi plugin that cannot find 'update' function declaration.
     # noqa doesn't help in this case, but if declare 'fix_cf009' function and
@@ -175,9 +176,23 @@ async def update_todo_list(
 @router.delete('/todo_list/{uuid}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo_list(
         uuid: UUID,
-        todo_list_with_session: tuple[TODOList, AIOSession] = Depends(
+        dependencies: tuple[User, TODOList, AIOSession] = Depends(
             get_todo_list_by_uuid,
         ),
 ) -> None:
-    todo_list, db_session = todo_list_with_session
+    user, todo_list, db_session = dependencies
     await db_session.delete(todo_list)
+    if user.is_superuser and user.id != todo_list.user:
+        telegrams = [
+            other_user.telegram
+            async for other_user in db_session.find(
+                User,
+                User.id != todo_list.user.id,
+            )
+        ]
+        for telegram in telegrams:
+            send_message_about_deleting.delay(
+                todo_list.user.username,
+                todo_list.name,
+                telegram,
+            )

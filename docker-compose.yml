@@ -10,14 +10,21 @@ services:
       - PORT=${PORT}
       - DB_URI=${DB_URI}
       - DATABASE=${DATABASE_NAME}
+      - FLOWER_PORT=${FLOWER_PORT}
+      - ABSTRACT_TELEGRAM_HOST=${ABSTRACT_TELEGRAM_HOST}
+      - ABSTRACT_TELEGRAM_PORT=${ABSTRACT_TELEGRAM_PORT}
+      - BROKER_URI=${BROKER_URI}
     ports:
      - 8060:${PORT}
+     - 5566:${FLOWER_PORT}
     healthcheck:
       test: "wget --spider ${HOST}:${PORT}/health"
       interval: 15s
       retries: 10
     depends_on:
+      - telegram
       - mongo
+      - redis
   mongo:
     build:
       context: dev_tools/mongo_docker
@@ -30,6 +37,19 @@ services:
       - MONGO_INITDB_DATABASE=${DB_NAME}
     volumes:
       - mongo-data:/data/db
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+  telegram:
+    build:
+      context: abstract_telegram
+      dockerfile: Dockerfile
+    ports:
+      - 65432:${ABSTRACT_TELEGRAM_PORT}
+    environment:
+      - ABSTRACT_TELEGRAM_HOST=${ABSTRACT_TELEGRAM_HOST}
+      - ABSTRACT_TELEGRAM_PORT=${ABSTRACT_TELEGRAM_PORT}
 
 volumes:
   mongo-data:

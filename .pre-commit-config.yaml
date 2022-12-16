@@ -7,7 +7,7 @@ repos:
       verbose: true
       language: system
       stages: [commit]
-      entry: bash -c "source venv/bin/activate && isort --settings-file dev_tools/pre-commit/.isort.cfg src"
+      entry: bash -c "source venv/bin/activate && isort --settings-file dev_tools/pre-commit/.isort.cfg src abstract_telegram"
       require_serial: true
 
     - id: code_check
@@ -15,7 +15,7 @@ repos:
       verbose: true
       language: system
       stages: [ commit ]
-      entry: bash -c "source venv/bin/activate && mypy --config-file=dev_tools/pre-commit/mypy.ini src"
+      entry: bash -c "source venv/bin/activate && mypy --config-file=dev_tools/pre-commit/mypy.ini src abstract_telegram"
       require_serial: true
 
     - id: code_style
@@ -23,7 +23,7 @@ repos:
       verbose: true
       language: system
       stages: [commit]
-      entry: bash -c "source venv/bin/activate && flake8 --config=dev_tools/pre-commit/.flake8 src"
+      entry: bash -c "source venv/bin/activate && flake8 --config=dev_tools/pre-commit/.flake8 src abstract_telegram"
       require_serial: true
 
     - id: test

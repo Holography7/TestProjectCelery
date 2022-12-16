@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  abstract_telegram:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ABSTRACT_TELEGRAM_HOST=${ABSTRACT_TELEGRAM_HOST}
+      - ABSTRACT_TELEGRAM_PORT=${ABSTRACT_TELEGRAM_PORT}
+    ports:
+     - 54321:${ABSTRACT_TELEGRAM_PORT}
