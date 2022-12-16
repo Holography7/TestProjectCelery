@@ -21,8 +21,8 @@ I just want to lear use Celery, nothing else.
    - [X] mypy
    - [X] flake8
    - [X] pytest
-- [ ] Celery
-- [ ] Redis (or RabbitMQ)
+- [X] Celery
+- [X] Redis
 
 ## What's this?
 
@@ -35,7 +35,8 @@ It's API that allows creating TODO lists for each user. All data stores in Mongo
 - [X] Creating TODO List. User have access only to own lists.
 - [X] Superuser can watch all TODO lists
 - [X] Superuser can delete others TODO lists
-- [ ] After deleting, every user get on [abstract] telegram message about deleting TODO list (there should work Celery)
+- [X] After deleting, every user get on [abstract] telegram message about deleting TODO list (there should work Celery)
+- [ ] User deleting after 3 days inactivity (also should work with Celery)
 
 ## Are you sure that you want try to run it? Then:
 
@@ -43,15 +44,19 @@ It's API that allows creating TODO lists for each user. All data stores in Mongo
 - make sure that you have Docker engine and you able to run docker-compose
 - create `.env` file in root directory of downloaded repo and type your variables:
 
-| Variable      | Description                          | Recommended value                                       |
-|---------------|--------------------------------------|---------------------------------------------------------|
-| HOST          | Host of running project in container | 0.0.0.0                                                 |
-| PORT          | Port of running project in container | 8000                                                    |
-| DB_URI        | URI for connecting to MongoDB        | mongodb://[your user]:[your password]@mongo:27017/admin |
-| DATABASE_NAME | Database name in MongoDB             | Any                                                     |
-| DB_USER       | User of MongoDB                      | Any                                                     |
-| DB_PASS       | Password of User of MongoDB          | Any                                                     |
-| DB_NAME       | Database name in MongoDB             | Any                                                     |
+| Variable               | Description                                                    | Recommended value                                       |
+|------------------------|----------------------------------------------------------------|---------------------------------------------------------|
+| HOST                   | Host of running project in container                           | 0.0.0.0                                                 |
+| PORT                   | Port of running project in container                           | 8000                                                    |
+| DB_URI                 | URI for connecting to MongoDB                                  | mongodb://[your user]:[your password]@mongo:27017/admin |
+| DATABASE_NAME          | Database name in MongoDB                                       | Any                                                     |
+| DB_USER                | User of MongoDB                                                | Any                                                     |
+| DB_PASS                | Password of User of MongoDB                                    | Any                                                     |
+| DB_NAME                | Database name in MongoDB                                       | Any                                                     |
+| FLOWER_PORT            | Port that exposed on local machine for open flower dashboard   | 5566                                                    |
+| ABSTRACT_TELEGRAM_HOST | Host for connecting to abstract telegram                       | telegram                                                |
+| ABSTRACT_TELEGRAM_PORT | Port for connecting to abstract telegram                       | 54321                                                   |
+| BROKER_URI             | URI of broker for storing Celery task queue                    | redis://redis:6379/0                                    |
 
 - Then just run this project by single command:
 ```bash
@@ -100,7 +105,21 @@ docker-compose up --build
 
 Your data will save in `mongo_docker_mongo-data`.
 
+Also this project emulating telegram server with `abstract_telegram` container. Type this command in `abstract_telegram` folder:
+
+```bash
+docker-compose up -d --build
+```
+
+And don't forget run Celery worker and flower in `src` folder:
+
+```bash
+celery -A celery_app worker --loglevel=INFO
+celery -A celery_app flower --port=5566
+```
+
 Also you can run tests manually from `src` directory:
+
 ```bash
 pytest
 ```
@@ -110,6 +129,8 @@ Or using coverage:
 coverage run -m pytest
 coverage report -m
 ```
+
+Remember that celery tasks is mocked in tests.
 
 Last coverage report results:
 

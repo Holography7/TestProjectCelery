@@ -1,5 +1,4 @@
-import datetime
-from typing import Generator
+from typing import Generator, Optional
 from uuid import uuid4
 
 from bson import Binary
@@ -10,7 +9,7 @@ class User(Model):
     username: str = Field(unique=True)
     password: str
     telegram: str
-    last_seen: datetime.datetime
+    celery_task_id: Optional[Binary]
     is_superuser: bool = False
 
 

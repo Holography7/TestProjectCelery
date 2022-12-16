@@ -1,11 +1,16 @@
 import datetime
 from uuid import UUID
 
-from celery_app.tasks import send_message_about_deleting
+from bson import Binary
+from celery_app.tasks import (
+    delete_user_after_inactive_period,
+    send_message_about_deleting,
+)
 from dependencies import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, Header
 from jose import JWTError
 from odmantic.session import AIOSession
+from settings import COUNT_DAYS_TO_DELETE_USER_AFTER_INACTIVE as INACTIVE_DAYS
 from settings import PWD_CONTEXT
 from starlette import status
 
@@ -108,8 +113,13 @@ async def registration(
         username=user_creds.username,
         password=hashed_pass,
         telegram=user_creds.telegram,
-        last_seen=datetime.datetime.now(),
     )
+    await db_session.save(user)
+    task_result = delete_user_after_inactive_period.apply_async(
+        (user_creds.username,),
+        eta=datetime.datetime.utcnow() + datetime.timedelta(days=INACTIVE_DAYS)
+    )
+    user.celery_task_id = Binary.from_uuid(UUID(task_result.id))
     await db_session.save(user)
     return user_creds
 

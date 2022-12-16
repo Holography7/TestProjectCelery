@@ -8,6 +8,9 @@ from celery_app.settings import (
     ABSTRACT_TELEGRAM_SUCCESS_RESPONSE,
     MESSAGE_TEMPLATE,
 )
+from database import mongo_engine
+
+from todo_list.models import User
 
 
 @app.task(name='send_message_about_deleting')
@@ -35,3 +38,9 @@ def send_message_about_deleting(
         raise ValueError(
             f'From telegram got unsuccessful response: {response}',
         )
+
+
+@app.task(name='delete_user_after_inactive_period')
+async def delete_user_after_inactive_period(username: str) -> None:
+    async with mongo_engine.session() as session:
+        session.delete(session.find_one(User, User.username == username))

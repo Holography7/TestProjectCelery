@@ -19,3 +19,14 @@ JWT_REFRESH_SECRET_KEY = os.environ.get(
 JWT_ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_MINUTES = 10080  # 7 days
+COUNT_DAYS_TO_DELETE_USER_AFTER_INACTIVE = int(
+    os.environ.get(
+        'COUNT_DAYS_TO_DELETE_USER_AFTER_INACTIVE',
+        3,
+    ),
+)
+BROKER_URI = os.environ.get('BROKER_URI', 'redis://localhost:6379/0')
+RESULT_BACKEND_URI = os.environ.get(
+    'RESULT_BACKEND_URI',
+    'redis://localhost:6379/1',
+)

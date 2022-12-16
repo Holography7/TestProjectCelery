@@ -1,11 +1,15 @@
+import datetime
 from uuid import UUID
 
 from bson import Binary
+from celery.result import AsyncResult
+from celery_app.tasks import delete_user_after_inactive_period
 from dependencies import get_db_session
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from odmantic.session import AIOSession
+from settings import COUNT_DAYS_TO_DELETE_USER_AFTER_INACTIVE as INACTIVE_DAYS
 from starlette import status
 
 from todo_list.enums import TokenEnum
@@ -35,6 +39,18 @@ async def has_access(
     user = await db_session.find_one(User, User.username == username)
     if user is None:
         raise credentials_exception
+    if not user.is_superuser:
+        task_id = str(user.celery_task_id.as_uuid())
+        if task_id:
+            AsyncResult(task_id).revoke()
+        task_result = delete_user_after_inactive_period.apply_async(
+            (username,),
+            eta=datetime.datetime.utcnow() + datetime.timedelta(
+                days=INACTIVE_DAYS,
+            )
+        )
+        user.celery_task_id = Binary.from_uuid(UUID(task_result.id))
+        await db_session.save(user)
     return user
 
 
